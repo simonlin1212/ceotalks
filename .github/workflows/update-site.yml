@@ -1,0 +1,115 @@
+# ceotalks.online 的线上更新：GitHub 的机器跑一轮 fetcher/（跟本仓库给大家的是同一份程序），
+# 判完把 site/ 传到 Cloudflare。累积库放在本仓库的 data 分支，只留一个提交，每轮覆盖。
+# 只在 simonlin1212/ceotalks 上跑；fork 后要自己用，改掉下面 jobs.update.if 里的仓库名，再按 README「自己部署」设好。
+#
+# 要的设置（仓库 Settings → Secrets and variables → Actions）：
+#   secrets.CLOUDFLARE_API_TOKEN   Cloudflare 令牌：能部署 Workers；要 AI 的话还要能用 Workers AI
+#   vars.CLOUDFLARE_ACCOUNT_ID     Cloudflare 账号 ID
+#   vars.LEADERS_AI_MODEL          Workers AI 的模型名，如 @cf/openai/gpt-oss-120b；不设就不叫 AI
+# 都没设也能跑：只抓、不叫 AI、不上传，用来看 YouTube 让不让 GitHub 的机器搜。
+name: 更新网站
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 只跑这几个人（键用逗号隔开，空着就是全部）
+        default: ""
+      backfill:
+        description: 搜今年的（第一次填库用），平时只搜本周
+        type: boolean
+        default: false
+      ai:
+        description: 叫不叫 AI（auto = 设好了就叫）
+        type: choice
+        options: [auto, "off"]
+        default: auto
+      save:
+        description: 把累积库存回 data 分支
+        type: boolean
+        default: true
+      deploy:
+        description: 传到 Cloudflare
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # 存 data 分支
+
+concurrency:
+  group: update-site
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'simonlin1212/ceotalks'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # 定时跑的时候没有 inputs，按默认：叫 AI、存库、上传
+      SAVE: ${{ github.event_name == 'schedule' || inputs.save }}
+      DEPLOY: ${{ github.event_name == 'schedule' || inputs.deploy }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 不联网的测试
+        run: python3 -I tests/test_offline.py
+
+      - name: 取累积库（data 分支）
+        run: |
+          mkdir -p data
+          if git fetch -q --depth=1 origin data; then
+            git show FETCH_HEAD:store.json > data/store.json
+            echo "库 $(wc -c < data/store.json) 字节"
+          else
+            echo "还没有 data 分支，按空库起"
+          fi
+
+      - name: 抓一轮
+        env:
+          ONLY: ${{ inputs.only }}
+          BACKFILL: ${{ inputs.backfill }}
+          AI_INPUT: ${{ inputs.ai }}
+          CF_ACCOUNT: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          LEADERS_AI_MODEL: ${{ vars.LEADERS_AI_MODEL }}
+          LEADERS_AI_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          LEADERS_AI_TIMEOUT: "240"
+        run: |
+          if [ "$AI_INPUT" != off ] && [ -n "$LEADERS_AI_KEY" ] && [ -n "$LEADERS_AI_MODEL" ] && [ -n "$CF_ACCOUNT" ]; then
+            export LEADERS_AI=openai
+            export LEADERS_AI_URL="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/ai/v1/chat/completions"
+          else
+            export LEADERS_AI=off
+          fi
+          echo "AI：$LEADERS_AI ${LEADERS_AI_MODEL}"
+          args=()
+          [ -n "$ONLY" ] && args+=(--only "$ONLY")
+          [ "$BACKFILL" = true ] && args+=(--backfill)
+          python3 -I fetcher/leaders.py "${args[@]}"
+
+      - name: 存累积库
+        if: env.SAVE == 'true'
+        run: |
+          blob=$(git hash-object -w data/store.json)
+          tree=$(printf '100644 blob %s\tstore.json\n' "$blob" | git mktree)
+          commit=$(git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                   commit-tree "$tree" -m "data: $(date -u +%Y-%m-%dT%H:%MZ)")
+          git push -q -f origin "$commit:refs/heads/data"
+          echo "存好了"
+
+      - uses: actions/setup-node@v7
+        if: env.DEPLOY == 'true'
+        with:
+          node-version: 24
+
+      - name: 传到 Cloudflare
+        if: env.DEPLOY == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "没设 Cloudflare 令牌或账号 ID，这轮不上传"
+            exit 0
+          fi
+          npx --yes wrangler@4.154.0 deploy --config deploy/wrangler.jsonc

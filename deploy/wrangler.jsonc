@@ -1,0 +1,21 @@
+{
+  // ceotalks.online 的部署设置：Cloudflare Workers 只放静态文件（../site），不连数据库。
+  // 线上由 .github/workflows/update-site.yml 按点抓取后上传；要从自己电脑上传，在仓库根目录跑：
+  //   npx wrangler deploy --config deploy/wrangler.jsonc
+  // 部署到自己的域名：改 name、routes 里的域名和 worker.js 里的跳转；没有域名就删掉 routes，把 workers_dev 改成 true。
+  "name": "ceotalks",
+  "compatibility_date": "2026-09-01",
+  "main": "./worker.js",
+  "workers_dev": false,
+  "assets": {
+    "directory": "../site",
+    "binding": "ASSETS",
+    // 先过 worker.js，才能把 www 跳到主域名
+    "run_worker_first": true
+  },
+  // 部署时 wrangler 自动建这两个域名的 DNS 记录和证书
+  "routes": [
+    { "pattern": "ceotalks.online", "custom_domain": true },
+    { "pattern": "www.ceotalks.online", "custom_domain": true }
+  ]
+}
