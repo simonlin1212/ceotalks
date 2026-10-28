@@ -263,7 +263,7 @@ def _run(args, keys: List[str], provider: J.Provider) -> int:
                 if v.get("keep") and v.get("aiv") == AI_VERSION:
                     context.setdefault(v["person"], []).append(v)
             res = J.judge(provider, batch, context, PERSON, AI_BAD, log)
-            if res is None:
+            if not res:   # 没回，或者一条能用的都没有：都算这批不通
                 for v in batch:
                     miss(v)
                 fails += 1

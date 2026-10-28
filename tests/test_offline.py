@@ -1,9 +1,10 @@
-"""不联网的自测：认名字、AI 回话怎么认、去重、两种 AI 接法、AI 关掉时页面放什么。
+"""不联网的自测：认名字、AI 回话怎么认、去重、两种 AI 接法、key 不外漏、AI 一条能用的都没回、AI 关掉时页面放什么。
 
 跑法: python3 -I tests/test_offline.py
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -89,10 +90,21 @@ class Reply(unittest.TestCase):
 
 class _Handler(BaseHTTPRequestHandler):
     seen = {}
+    stolen = None   # 跳转过去那一下带没带 key
+
+    def do_GET(self):
+        _Handler.stolen = self.headers.get("Authorization") or "（来了，没带 key）"
+        self.send_response(200)
+        self.end_headers()
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         _Handler.seen = {"auth": self.headers.get("Authorization"), "body": body}
+        if body["model"] == "redirect":
+            self.send_response(302)
+            self.send_header("Location", "/somewhere-else")
+            self.end_headers()
+            return
         if body["model"] == "bad":
             self.send_response(401)
             self.end_headers()
@@ -143,6 +155,20 @@ class Providers(unittest.TestCase):
         self.assertIn("401", p.last_error)
         self.assertNotIn("sk-test-123", p.last_error)
 
+    def test_redirect_not_followed(self):
+        # urllib 跟跳转时会把 Authorization 原样带到新地址；叫 AI 时不跟
+        _Handler.stolen = None
+        p = J.OpenAICompatible(self.url, "redirect", "sk-test-123", 10)
+        self.assertIsNone(p.ask("x"))
+        self.assertIn("302", p.last_error)
+        self.assertIsNone(_Handler.stolen)
+
+    def test_remote_http_with_key_refused(self):
+        with self.assertRaises(ValueError):
+            J.OpenAICompatible("http://api.example.com/v1/chat/completions", "m1", "sk-test-123", 10)
+        J.OpenAICompatible("http://api.example.com/v1/chat/completions", "m1", "", 10)        # 不带 key 可以
+        J.OpenAICompatible("https://api.example.com/v1/chat/completions", "m1", "sk-test-123", 10)
+
     def test_no_key_for_local_model(self):
         p = J.OpenAICompatible(self.url, "m1", "", 10)
         self.assertIsNotNone(p.ask("x"))
@@ -153,6 +179,32 @@ class Providers(unittest.TestCase):
         self.assertEqual(J.Command(cmd, 10).ask("abc"), "ABC")
         self.assertIsNone(J.Command(f'"{sys.executable}" -I -c "raise SystemExit(3)"', 10).ask("x"))
 
+    def test_command_errors_hide_secrets(self):
+        loud = (f'"{sys.executable}" -I -c "import sys; '
+                "sys.stderr.write('Authorization: Bearer abc123xyz api_key=s3cr3tvalue'); raise SystemExit(1)\"")
+        c = J.Command(loud, 10)
+        self.assertIsNone(c.ask("x"))
+        self.assertIn("退出码 1", c.last_error)
+        self.assertNotIn("abc123xyz", c.last_error)
+        self.assertNotIn("s3cr3tvalue", c.last_error)
+
+    def test_scrub_common_forms(self):
+        os.environ["DEMO_SERVICE_TOKEN"] = "envsecret-98765"
+        try:
+            out = J.scrub("OPENAI_API_KEY=demo-env-123 access_token=demo-access-123 "
+                          "unrecognized arguments: --api-key demo-argument-123 --verbose; "
+                          '{"password": "pw-demo-456"} failed with envsecret-98765; max_tokens: 4096')
+        finally:
+            del os.environ["DEMO_SERVICE_TOKEN"]
+        for leak in ("demo-env-123", "demo-access-123", "demo-argument-123", "pw-demo-456", "envsecret-98765"):
+            self.assertNotIn(leak, out)
+        self.assertIn("--verbose", out)          # 后面的参数不误吃
+        self.assertIn("max_tokens: 4096", out)   # 正常的设置名不误伤
+        slow = J.Command(f'"{sys.executable}" -I -c "import time; time.sleep(5)" --token=s3cr3targ', 1)
+        self.assertIsNone(slow.ask("x"))
+        self.assertIn("超过 1 秒", slow.last_error)
+        self.assertNotIn("s3cr3targ", slow.last_error)      # 超时不带命令原文
+
     def test_from_env_checks(self):
         os.environ.pop("LEADERS_AI_MODEL", None)
         with self.assertRaises(ValueError):
@@ -160,6 +212,36 @@ class Providers(unittest.TestCase):
         with self.assertRaises(ValueError):
             J.from_env("gpt")
         self.assertEqual(J.from_env("off").name, "off")
+
+
+class AiRound(unittest.TestCase):
+    def test_no_usable_answer_counts_as_failed(self):
+        # 模型一直回认不出的（i 写成字符串）：两批都算不通，这轮记 AI 不通、停下，一条都不算判过
+        store = {"videos": {}, "searched": {}, "runs": []}
+        for i in range(2 * L.AI_BATCH):
+            v = vid("jensen", i)
+            store["videos"][f"jensen:{v['id']}"] = v
+        L.write_json_atomic(L.STORE, store)
+
+        class Fake(J.Provider):
+            name = "fake"
+            calls = 0
+
+            def ask(self, prompt):
+                Fake.calls += 1
+                return '[{"i":"0","keep":true}]'
+        saved = (L.Y.search, L.MAX_PAGES, L.GAP)
+        L.Y.search, L.MAX_PAGES, L.GAP = (lambda *a: []), 0, 0
+        try:
+            L._run(argparse.Namespace(backfill=False), ["jensen"], Fake())
+        finally:
+            L.Y.search, L.MAX_PAGES, L.GAP = saved
+        with open(L.STORE, encoding="utf-8") as f:
+            st = json.load(f)
+        self.assertEqual(Fake.calls, 2)
+        self.assertIs(st["runs"][-1]["ai"], False)
+        self.assertTrue(any("连着两批不通" in e for e in st["runs"][-1]["errors"]))
+        self.assertTrue(all("aiv" not in v and v.get("aiTries") == 1 for v in st["videos"].values()))
 
 
 class Page(unittest.TestCase):

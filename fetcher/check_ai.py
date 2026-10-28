@@ -22,6 +22,8 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=16, help="对几条（收、不收各一半）")
     ap.add_argument("--ai", choices=["openai", "command"], help="不写就看环境变量 LEADERS_AI")
     args = ap.parse_args()
+    if args.n < 1:
+        ap.error("--n 要是正整数")
     provider = J.from_env(args.ai)
     if provider.name == "off":
         L.log("AI 没开，没什么可对的（设 LEADERS_AI 或 --ai）")
@@ -30,8 +32,8 @@ def main() -> int:
         vids = json.load(f)["videos"]
     judged = sorted((v for v in vids.values() if v.get("aiv") == J.AI_VERSION and v.get("person") in L.PERSON
                      and not v.get("dup")), key=lambda v: v["published"], reverse=True)
-    half = max(1, args.n // 2)
-    sample = [v for v in judged if v.get("keep")][:half] + [v for v in judged if not v.get("keep")][:half]
+    half = (args.n + 1) // 2      # 单数时收的多一条；库里不够就少对几条
+    sample = [v for v in judged if v.get("keep")][:half] + [v for v in judged if not v.get("keep")][:args.n - half]
     same = diff = none = 0
     rows = []
     for b in range(0, len(sample), L.AI_BATCH):

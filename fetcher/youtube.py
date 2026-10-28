@@ -17,10 +17,10 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120 Safari/537.36")
 
 
-def opener() -> urllib.request.OpenerDirector:
+def opener(*handlers) -> urllib.request.OpenerDirector:
     if os.environ.get("LEADERS_NO_PROXY", "").lower() in ("1", "true", "yes"):
-        return urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    return urllib.request.build_opener()
+        return urllib.request.build_opener(urllib.request.ProxyHandler({}), *handlers)
+    return urllib.request.build_opener(*handlers)
 
 
 OPENER = opener()

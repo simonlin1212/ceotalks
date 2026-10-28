@@ -1,0 +1,8 @@
+{
+  "name": "ceotalks-deploy",
+  "private": true,
+  "description": "只用来锁定上传网站用的 wrangler 版本；GitHub Actions 照 package-lock.json 装",
+  "devDependencies": {
+    "wrangler": "4.154.0"
+  }
+}

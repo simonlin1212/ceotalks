@@ -42,7 +42,7 @@ CEO Talks searches YouTube on a schedule for everyone on the list, **keeps only 
 - **Nothing to install**: the fetcher uses only the Python 3.9 standard library. No `pip install`, no YouTube API key. The site is plain HTML + CSS + JS with no build step; drop it on any static host.
 - **The archive keeps growing**: judged videos are stored in a local database, never judged twice, and kept for 400 days. Each run only sends newly found candidates to the AI.
 
-> Current version v1.0.0 (2026-10-28): first release. Fetcher, bilingual site, three ways to plug in AI, 14 offline tests.
+> Current version v1.0.0 (2026-10-28): first release. Fetcher, bilingual site, three ways to plug in AI, 19 offline tests.
 
 ---
 
@@ -168,7 +168,7 @@ Example: any OpenAI-compatible API (swap in your provider's URL and model name)
 LEADERS_AI=openai LEADERS_AI_URL=https://api.openai.com/v1/chat/completions LEADERS_AI_MODEL=your-model LEADERS_AI_KEY_FILE=~/.config/leaders/ai.key python3 -I fetcher/leaders.py
 ```
 
-- **Keys**: read fresh from the environment variable or key file only, never written into code, logs or output; error messages have the key scrubbed first. Keys containing spaces, newlines or non-ASCII characters are rejected outright.
+- **Keys**: read fresh from the environment variable or key file only, never written into code, logs or output. Error messages are scrubbed before they're logged: the configured key, the values of environment variables whose names end in `KEY` / `TOKEN` / `SECRET` / `PASSWORD`, whatever follows `Bearer`, forms like `api_key=value` and `--api-key value` (any name ending in key, token, secret or password), and anything starting with `sk-` (with `command`, the program can't know what else your own command might print). An API that takes a key must use `https://` (local addresses excepted), and redirects aren't followed, so the key can't be carried to another site. Keys containing spaces, newlines or non-ASCII characters are rejected outright.
 - **When the AI is down**: if a batch fails it tries the next one; after two failed batches in a row it stops calling the AI for that run, and unjudged videos wait for the next run while official channels and interview shows are shown provisionally. A video that gets no answer three times is only retried once a day after that. If the AI's reply can't be read as JSON, the raw reply is saved to `data/ai_bad_last.txt` for inspection.
 - **Titles and descriptions are treated as material**: the prompt tells the AI not to follow any instructions found in a video's title or description.
 - **Compare before switching AI**: `check_ai.py` picks judged videos from the archive (half kept, half rejected, newest first), has the currently configured AI judge them again, and lists each one as same or different. It never changes the archive (an unreadable AI reply is saved to `data/ai_bad_check.txt`).
@@ -190,7 +190,7 @@ python3 -I fetcher/check_ai.py --n 16
 <tr><td nowrap><code>  --page-only</code></td><td>No search, no AI: rebuild the page data from the archive (after editing names or titles in the list); the update time stays that of the last real run</td></tr>
 <tr><td nowrap><code>python3 -I fetcher/check_ai.py</code></td><td>Compare judgments before switching AI; <code>--n</code> how many (default 16), <code>--ai openai|command</code> to override</td></tr>
 <tr><td nowrap><code>node dev/serve.mjs [port]</code></td><td>Preview the site locally; default 8860, listens on 127.0.0.1 only, no caching</td></tr>
-<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>14 offline tests</td></tr>
+<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>19 offline tests</td></tr>
 <tr><td nowrap><code>python3 -I brand/make_logo.py</code></td><td>Redraw the logo: writes <code>mark.svg</code>, <code>logo.svg</code>, <code>logo-light.svg</code> under <code>site/brand/</code> and <code>site/favicon.svg</code></td></tr>
 <tr><td nowrap><code>zsh brand/make_images.sh</code></td><td>Render the Chinese and English share images and app icons with the local Chrome (macOS Chrome path)</td></tr>
 </table>
@@ -202,7 +202,7 @@ Exit codes: `0` normal (including "another round is still running, skipped"); `2
 <table>
 <tr><th nowrap>Variable</th><th nowrap>Default</th><th>Notes</th></tr>
 <tr><td nowrap><code>LEADERS_AI</code></td><td nowrap><code>off</code></td><td>Which AI: <code>off</code> / <code>openai</code> / <code>command</code></td></tr>
-<tr><td nowrap><code>LEADERS_AI_URL</code></td><td nowrap>OpenAI</td><td>API endpoint for <code>openai</code>; must start with <code>http://</code> or <code>https://</code>; default <code>https://api.openai.com/v1/chat/completions</code></td></tr>
+<tr><td nowrap><code>LEADERS_AI_URL</code></td><td nowrap>OpenAI</td><td>API endpoint for <code>openai</code>; must start with <code>http://</code> or <code>https://</code>, and must be <code>https://</code> when a key is set (local addresses excepted); default <code>https://api.openai.com/v1/chat/completions</code></td></tr>
 <tr><td nowrap><code>LEADERS_AI_MODEL</code></td><td nowrap>—</td><td>Required for <code>openai</code></td></tr>
 <tr><td nowrap><code>LEADERS_AI_KEY</code></td><td nowrap>—</td><td>API key; optional for local models</td></tr>
 <tr><td nowrap><code>LEADERS_AI_KEY_FILE</code></td><td nowrap>—</td><td>File containing only the key; read when <code>LEADERS_AI_KEY</code> isn't set</td></tr>
@@ -288,7 +288,7 @@ site/index.html (Chinese) · site/en/index.html (English)
 
 - **Search, judge, then open pages**: a search page shows many results at once but only an approximate time ("5 hours ago"); a video page has the exact time, but open too many and YouTube asks for a bot check (in testing, opening 60+ in a row triggered it). So only videos that will be shown get their page opened; the rest are shown with the approximate time, marked "about" (约 on the Chinese site).
 - **The archive accumulates**: search only returns recent videos, so history lives in the archive. New candidates are added, older videos that turn up again in search get their view counts updated, and anything older than 400 days is dropped.
-- **Writes can't corrupt files**: the archive and page data are written to a temporary file and then renamed, so an interruption never leaves half a file. An unreadable archive (say, after a bad manual edit) isn't overwritten; it's moved aside as `store.json.bad-<time>` and the run starts from an empty archive.
+- **Writes can't corrupt files**: the archive and page data are written to a temporary file and then renamed, so an interruption never leaves half a file. An unreadable archive (say, after a bad manual edit) isn't overwritten; it's moved aside as `store.json.bad-<time>` and the run starts from an empty archive. (On GitHub Actions that file wouldn't survive, so the workflow stops instead; see Option 2 under Deploying.)
 - **One bad record doesn't sink the run**: records with wrong fields are dropped when read. People removed from the list keep their records in the archive (they come back if re-added); they're just not judged or shown.
 - **Upcoming premieres and live streams** are skipped until they've aired, then picked up; videos the page reveals to be under 20 minutes are dropped.
 - **One video, two people** (say, two leaders on the same stage): each gets judged separately and it appears under both.
@@ -338,7 +338,7 @@ Only one round runs at a time (file lock); if the previous round hasn't finished
 <tr><td nowrap><code>CLOUDFLARE_ACCOUNT_ID</code></td><td nowrap>Variables</td><td>Your Cloudflare account ID</td></tr>
 </table>
 
-If any of the three AI settings is missing, that round skips the AI (and follows the "AI off" rules); if either Cloudflare setting is missing, it doesn't upload. Keys and tokens go in Secrets and never into code or logs. To use it from a fork, change the repository name in the workflow's `jobs.update.if` and the name and domain in `deploy/wrangler.jsonc`. You can also run "更新网站" (Update site) by hand from the Actions page, with options to fetch only some people, search this year, turn the AI off, skip saving, or skip uploading.
+If any of the three AI settings is missing, that round skips the AI (and follows the "AI off" rules); if either Cloudflare setting is missing, it doesn't upload. Keys and tokens go in Secrets and never into code or logs. To avoid overwriting the live data, a round only starts from an empty archive when it has confirmed there's no `data` branch yet; if the archive can't be fetched or read, or the number of records drops by more than half after the run, the round stops without saving or uploading and shows an error on the Actions page for someone to look at. Wrangler is installed from `deploy/package-lock.json` (versions and checksums locked), and both actions are pinned to commit SHAs. To use it from a fork, change the repository name in the workflow's `jobs.update.if` and the name and domain in `deploy/wrangler.jsonc`. You can also run "更新网站" (Update site) by hand from the Actions page, with options to fetch only some people, search this year, turn the AI off, skip saving, or skip uploading.
 
 GitHub's machines hit YouTube's bot check on the very first video page (tested 2026-10), so this route sets `LEADERS_MAX_PAGES=0`: no video pages are opened, upload times are estimated from "x hours ago" on the search page and marked "about", and the AI only sees the short snippet from the search page. For exact times, use Option 1. Actions are free on public repos; private repos get 2,000 free minutes a month, and a round takes about 3 minutes, so every 2 hours fits but hourly would not.
 
@@ -398,11 +398,11 @@ ceotalks/
 │   ├── make_logo.py         Draws the logo
 │   ├── make_images.sh       Renders the share images and app icons
 │   └── og.html · og-en.html · touch.html   Layouts for the share images and app icon
-├── deploy/                  Cloudflare Workers deploy settings (wrangler.jsonc + worker.js that redirects www)
+├── deploy/                  Cloudflare Workers deploy settings (wrangler.jsonc + worker.js that redirects www + package.json · package-lock.json pinning wrangler)
 ├── .github/workflows/update-site.yml   GitHub Actions: fetch, save and upload every 2 hours
 ├── assets/screenshots/      Screenshots used in the README
 ├── dev/serve.mjs            Tiny local preview server
-├── tests/test_offline.py    14 offline tests
+├── tests/test_offline.py    19 offline tests
 ├── config.example.env       Example settings
 ├── README.md · README_en.md · CHANGELOG.md · LICENSE
 └── data/                    Archive (created by the fetcher, not committed)
@@ -410,7 +410,7 @@ ceotalks/
 
 ## Development and Tests
 
-Offline, 14 tests: name matching (full name and surname, first names needing context, when titles count), the reply formats the AI parser accepts, the duplicate rules, saving unreadable replies, the OpenAI-compatible and local-command providers, the answer-length setting, keys never appearing in errors, local models without a key, what bad settings report, what's shown with AI off, and that every person has both Chinese and English titles.
+Offline, 19 tests: name matching (full name and surname, first names needing context, when titles count), the reply formats the AI parser accepts, the duplicate rules, saving unreadable replies, the OpenAI-compatible and local-command providers, the answer-length setting, keys never appearing in errors, redirects not followed, no plain remote http with a key, local-command errors and timeouts not leaking keys, common key formats scrubbed, local models without a key, what bad settings report, a batch with no usable answer counting as failed, what's shown with AI off, and that every person has both Chinese and English titles.
 
 ```bash
 python3 -I tests/test_offline.py

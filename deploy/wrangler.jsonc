@@ -1,7 +1,7 @@
 {
   // ceotalks.online 的部署设置：Cloudflare Workers 只放静态文件（../site），不连数据库。
   // 线上由 .github/workflows/update-site.yml 按点抓取后上传；要从自己电脑上传，在仓库根目录跑：
-  //   npx wrangler deploy --config deploy/wrangler.jsonc
+  //   npm ci --prefix deploy && deploy/node_modules/.bin/wrangler deploy --config deploy/wrangler.jsonc
   // 部署到自己的域名：改 name、routes 里的域名和 worker.js 里的跳转；没有域名就删掉 routes，把 workers_dev 改成 true。
   "name": "ceotalks",
   "compatibility_date": "2026-09-01",

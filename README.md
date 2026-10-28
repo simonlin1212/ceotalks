@@ -42,7 +42,7 @@ CEO Talks 定时去 YouTube 搜一遍名单上的人，**只留下本人亲自�
 - **什么都不用装**：抓取端只用 Python 3.9 自带的库，不用 `pip install`、不用申请 YouTube key；网站是纯 HTML + CSS + JS，不用打包，放到任何静态托管上就能用。
 - **越攒越全**：判过的视频存在本机的库里，以后不再判，留 400 天；每一轮只把新出现的候选交给 AI。
 
-> 当前版本 v1.0.0（2026-10-28）：第一个版本。抓取端、中英双语网站、三种 AI 接法，14 条离线自测。
+> 当前版本 v1.0.0（2026-10-28）：第一个版本。抓取端、中英双语网站、三种 AI 接法，19 条离线自测。
 
 ---
 
@@ -168,7 +168,7 @@ LEADERS_AI=command LEADERS_AI_CMD="codex exec --skip-git-repo-check -s read-only
 LEADERS_AI=openai LEADERS_AI_URL=https://api.openai.com/v1/chat/completions LEADERS_AI_MODEL=你的模型名 LEADERS_AI_KEY_FILE=~/.config/leaders/ai.key python3 -I fetcher/leaders.py
 ```
 
-- **key 怎么保管**：只从环境变量或 key 文件现读，不写进代码、日志和输出；出错信息里的 key 会先抹掉。key 里有空格、换行或非 ASCII 字符会直接拒绝。
+- **key 怎么保管**：只从环境变量或 key 文件现读，不写进代码、日志和输出。出错信息记下来之前先抹一遍：设的那把 key、环境变量里名字以 `KEY` / `TOKEN` / `SECRET` / `PASSWORD` 结尾的值、`Bearer` 后面那段、`api_key=值` 和 `--api-key 值` 这类写法（名字以 key、token、secret、password 结尾的都算）、`sk-` 开头的（`command` 接法里你自己的命令还会打出什么别的，程序管不到）。带 key 的接口要用 `https://`（本机地址除外），接口要跳到别的地址也不跟过去，免得把 key 带走。key 里有空格、换行或非 ASCII 字符会直接拒绝。
 - **AI 不通时**：一批不通就试下一批，连着两批不通这一轮就不叫了，没判的下一轮再判，官方频道和访谈节目先照放；同一条三次都没给答复，之后一天只再问一次。AI 回的认不出是 JSON 时，原话留在 `data/ai_bad_last.txt` 里方便看。
 - **标题和简介当材料用**：提示词里写明了视频标题、简介里让 AI 做什么都不照做。
 - **换 AI 之前先对一下**：`check_ai.py` 从库里挑判过的视频（收、不收各一半，新的在前），让现在设的 AI 重判一遍，逐条列出跟库里一样不一样，不改库（AI 回的认不出时，原话留在 `data/ai_bad_check.txt`）。
@@ -190,7 +190,7 @@ python3 -I fetcher/check_ai.py --n 16
 <tr><td nowrap><code>  --page-only</code></td><td>不搜、不叫 AI，只用库里现有的重出页面数据（改了名单里的名字、头衔后用）；更新时间照最近一轮写</td></tr>
 <tr><td nowrap><code>python3 -I fetcher/check_ai.py</code></td><td>换 AI 前对一批判法；<code>--n</code> 对几条（默认 16），<code>--ai openai|command</code> 临时换一种</td></tr>
 <tr><td nowrap><code>node dev/serve.mjs [端口]</code></td><td>本机预览网站，默认 8860，只听 127.0.0.1，不缓存</td></tr>
-<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>14 条离线自测</td></tr>
+<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>19 条离线自测</td></tr>
 <tr><td nowrap><code>python3 -I brand/make_logo.py</code></td><td>重画标志：写出 <code>site/brand/</code> 下的 <code>mark.svg</code>、<code>logo.svg</code>、<code>logo-light.svg</code> 和 <code>site/favicon.svg</code></td></tr>
 <tr><td nowrap><code>zsh brand/make_images.sh</code></td><td>用本机 Chrome 截出中英文分享图和手机图标（macOS 的 Chrome 路径）</td></tr>
 </table>
@@ -202,7 +202,7 @@ python3 -I fetcher/check_ai.py --n 16
 <table>
 <tr><th nowrap>变量</th><th nowrap>默认</th><th>说明</th></tr>
 <tr><td nowrap><code>LEADERS_AI</code></td><td nowrap><code>off</code></td><td>AI 用哪种：<code>off</code> / <code>openai</code> / <code>command</code></td></tr>
-<tr><td nowrap><code>LEADERS_AI_URL</code></td><td nowrap>OpenAI 官方</td><td><code>openai</code> 时的接口地址，要以 <code>http://</code> 或 <code>https://</code> 开头；默认 <code>https://api.openai.com/v1/chat/completions</code></td></tr>
+<tr><td nowrap><code>LEADERS_AI_URL</code></td><td nowrap>OpenAI 官方</td><td><code>openai</code> 时的接口地址，要以 <code>http://</code> 或 <code>https://</code> 开头，带 key 时要用 <code>https://</code>（本机地址除外）；默认 <code>https://api.openai.com/v1/chat/completions</code></td></tr>
 <tr><td nowrap><code>LEADERS_AI_MODEL</code></td><td nowrap>—</td><td><code>openai</code> 时必填</td></tr>
 <tr><td nowrap><code>LEADERS_AI_KEY</code></td><td nowrap>—</td><td>接口的 key；本机模型可以不填</td></tr>
 <tr><td nowrap><code>LEADERS_AI_KEY_FILE</code></td><td nowrap>—</td><td>key 写在这个文件里（只放 key 本身），没设 <code>LEADERS_AI_KEY</code> 时读它</td></tr>
@@ -288,7 +288,7 @@ site/index.html（中文）· site/en/index.html（英文）
 
 - **先搜后判，再开页**：搜索页一次能看到很多条，但只给大约时间（「5 小时前」）；视频页有准确时间，但开多了 YouTube 就要人机验证（实测一口气开 60 多个就会）。所以只给判下来要放上页面的开视频页，没开到的先按大约时间放，标「约」。
 - **库是累积的**：搜索只给最近的，历史靠库留着。新候选先进库，这一轮又搜到的老视频更新播放量；超过 400 天的清掉。
-- **写文件不会写坏**：库和页面数据都是先写临时文件再换名，中途断了不会留下半个文件；库读不了（比如被手改坏了）不会被覆盖，挪成 `store.json.bad-时间` 留着，按空库重新起。
+- **写文件不会写坏**：库和页面数据都是先写临时文件再换名，中途断了不会留下半个文件；库读不了（比如被手改坏了）不会被覆盖，挪成 `store.json.bad-时间` 留着，按空库重新起。（GitHub Actions 上那个文件留不下来，所以那边改成直接停，见「部署上线」跑法二。）
 - **一条坏记录不拖垮整轮**：库里字段不对的记录读的时候丢掉；名单里删掉的人，记录留在库里（加回来还在），只是不判、不上页面。
 - **还没开播的预告和正在直播的**先跳过，播完再收；视频页核出来不到 20 分钟的直接不收。
 - **同一个视频分属两个人**（比如两个人同台），两条各判各的，页面上两个人下面都有。
@@ -338,7 +338,7 @@ site/index.html（中文）· site/en/index.html（英文）
 <tr><td nowrap><code>CLOUDFLARE_ACCOUNT_ID</code></td><td nowrap>Variables</td><td>Cloudflare 账号 ID</td></tr>
 </table>
 
-AI 那三样缺一样，这一轮就不叫 AI（照「AI 关着」的规矩放）；Cloudflare 那两样缺一样就不上传。key 和令牌都放 Secrets，不进代码和日志。fork 过去自己用：把 workflow 里 `jobs.update.if` 的仓库名、`deploy/wrangler.jsonc` 里的名字和域名换成你的。也可以在 Actions 页面手动点「更新网站」跑一轮，能选只跑某几个人、搜今年、关 AI、不存库、不上传。
+AI 那三样缺一样，这一轮就不叫 AI（照「AI 关着」的规矩放）；Cloudflare 那两样缺一样就不上传。key 和令牌都放 Secrets，不进代码和日志。为了不把线上数据盖掉：只有确认还没有 `data` 分支才按空库起；取不到或读不了库、或者跑完库里的条数掉了一半以上，这一轮就停，不存、不传，在 Actions 页面报错等人看。上传用的 wrangler 照 `deploy/package-lock.json` 装（版本和校验码都锁死），两个 action 也按提交号固定。fork 过去自己用：把 workflow 里 `jobs.update.if` 的仓库名、`deploy/wrangler.jsonc` 里的名字和域名换成你的。也可以在 Actions 页面手动点「更新网站」跑一轮，能选只跑某几个人、搜今年、关 AI、不存库、不上传。
 
 GitHub 的机器打开 YouTube 视频页第一下就要人机验证（2026-10 实测），所以这条路上 `LEADERS_MAX_PAGES=0`：不开视频页，上传时间按搜索页上的「几小时前」估，页面上标「约」；AI 也只看得到搜索页上的那一小段简介。要准确时间，用跑法一。公开仓库跑 Actions 不花钱；私有仓库每月 2,000 分钟免费，一轮约 3 分钟，每 2 小时一轮够用，每小时一轮会超。
 
@@ -398,11 +398,11 @@ ceotalks/
 │   ├── make_logo.py         画标志
 │   ├── make_images.sh       截分享图和手机图标
 │   └── og.html · og-en.html · touch.html   分享图、手机图标的版式
-├── deploy/                  传到 Cloudflare Workers 的设置（wrangler.jsonc + www 跳主域名的 worker.js）
+├── deploy/                  传到 Cloudflare Workers 的设置（wrangler.jsonc + www 跳主域名的 worker.js + 锁定 wrangler 版本的 package.json · package-lock.json）
 ├── .github/workflows/update-site.yml   GitHub Actions：每 2 小时抓一轮、存库、上传
 ├── assets/screenshots/      README 里的截图
 ├── dev/serve.mjs            本机预览用的小服务器
-├── tests/test_offline.py    14 条离线自测
+├── tests/test_offline.py    19 条离线自测
 ├── config.example.env       设置示例
 ├── README.md · README_en.md · CHANGELOG.md · LICENSE
 └── data/                    累积库（跑了抓取才有，不进仓库）
@@ -410,7 +410,7 @@ ceotalks/
 
 ## 开发与自测
 
-不联网，14 条：认名字（全名和姓、只有名要带上下文、头衔什么时候算）、AI 回话的几种格式怎么认、同一场去重的规则、认不出的回话留原话、OpenAI 兼容接口和本机命令两种接法、回答长度设置、key 不出现在报错里、本机模型可以不要 key、设置不对时报什么、AI 关着时只放哪些、每个人中英文头衔都有。
+不联网，19 条：认名字（全名和姓、只有名要带上下文、头衔什么时候算）、AI 回话的几种格式怎么认、同一场去重的规则、认不出的回话留原话、OpenAI 兼容接口和本机命令两种接法、回答长度设置、key 不出现在报错里、接口跳转不跟、带 key 不许远程 http、本机命令报错和超时不露 key、常见的 key 写法都抹掉、本机模型可以不要 key、设置不对时报什么、AI 一条能用的都没回算这批不通、AI 关着时只放哪些、每个人中英文头衔都有。
 
 ```bash
 python3 -I tests/test_offline.py

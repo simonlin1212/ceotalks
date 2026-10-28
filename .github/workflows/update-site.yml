@@ -9,6 +9,9 @@
 #   secrets.CLOUDFLARE_API_TOKEN   Cloudflare 令牌，能部署 Workers（用「编辑 Cloudflare Workers」模板建）
 #   vars.CLOUDFLARE_ACCOUNT_ID     Cloudflare 账号 ID；这两样缺一样就不上传
 # 都没设也能跑：只抓、不叫 AI、不上传，用来看 YouTube 让不让 GitHub 的机器搜。
+#
+# 护着线上数据：只有确认还没有 data 分支才按空库起；取不到、读不了库，或者跑完库里的条数掉了一半以上，
+# 这一轮就停，不存、不传，等人看（本机跑时库读不了会挪成 store.json.bad-时间，这里那个文件留不下来，所以直接停）。
 name: 更新网站
 
 on:
@@ -54,7 +57,7 @@ jobs:
       SAVE: ${{ github.event_name == 'schedule' || inputs.save }}
       DEPLOY: ${{ github.event_name == 'schedule' || inputs.deploy }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
 
       - name: 不联网的测试
         run: python3 -I tests/test_offline.py
@@ -62,12 +65,23 @@ jobs:
       - name: 取累积库（data 分支）
         run: |
           mkdir -p data
-          if git fetch -q --depth=1 origin data; then
-            git show FETCH_HEAD:store.json > data/store.json
-            echo "库 $(wc -c < data/store.json) 字节"
-          else
+          rc=0
+          git ls-remote --exit-code --heads origin data > /dev/null || rc=$?
+          if [ "$rc" = 2 ]; then
             echo "还没有 data 分支，按空库起"
+            echo "OLD_COUNT=0" >> "$GITHUB_ENV"
+            exit 0
           fi
+          if [ "$rc" != 0 ]; then
+            echo "::error::查不了 data 分支（退出码 $rc），这轮不跑"
+            exit 1
+          fi
+          git fetch -q --depth=1 origin data
+          git show FETCH_HEAD:store.json > data/store.json
+          n=$(python3 -I -c 'import json, sys; v = json.load(open(sys.argv[1], encoding="utf-8"))["videos"]; assert isinstance(v, dict); print(len(v))' data/store.json) \
+            || { echo "::error::data 分支上的库读不了，这轮不跑，等人看"; exit 1; }
+          echo "库里 $n 条"
+          echo "OLD_COUNT=$n" >> "$GITHUB_ENV"
 
       - name: 抓一轮
         env:
@@ -92,6 +106,15 @@ jobs:
           [ "$BACKFILL" = true ] && args+=(--backfill)
           python3 -I fetcher/leaders.py "${args[@]}"
 
+      - name: 看库有没有突然变少
+        run: |
+          n=$(python3 -I -c 'import json, sys; print(len(json.load(open(sys.argv[1], encoding="utf-8"))["videos"]))' data/store.json)
+          echo "跑完库里 $n 条（跑之前 $OLD_COUNT 条）"
+          if [ "$OLD_COUNT" -gt 0 ] && [ $((n * 2)) -lt "$OLD_COUNT" ]; then
+            echo "::error::库从 $OLD_COUNT 条掉到 $n 条，这轮不存、不传，等人看"
+            exit 1
+          fi
+
       - name: 存累积库
         if: env.SAVE == 'true'
         run: |
@@ -102,10 +125,14 @@ jobs:
           git push -q -f origin "$commit:refs/heads/data"
           echo "存好了"
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1   # v7.1.0
         if: env.DEPLOY == 'true'
         with:
           node-version: 24
+
+      - name: 装 wrangler（照 deploy/package-lock.json，版本和校验码都锁死；这步不给 Cloudflare 令牌）
+        if: env.DEPLOY == 'true'
+        run: npm ci --prefix deploy --no-audit --no-fund
 
       - name: 传到 Cloudflare
         if: env.DEPLOY == 'true'
@@ -117,4 +144,4 @@ jobs:
             echo "没设 Cloudflare 令牌或账号 ID，这轮不上传"
             exit 0
           fi
-          npx --yes wrangler@4.154.0 deploy --config deploy/wrangler.jsonc
+          deploy/node_modules/.bin/wrangler deploy --config deploy/wrangler.jsonc

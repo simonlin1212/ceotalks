@@ -10,3 +10,6 @@ config.env
 
 __pycache__/
 .DS_Store
+
+# 上传网站用的 wrangler（npm ci --prefix deploy 装出来的）
+node_modules/

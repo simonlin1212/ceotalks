@@ -6,12 +6,15 @@
   openai    任何「OpenAI 兼容」的聊天接口：OpenAI、DeepSeek、OpenRouter、智谱、本机 Ollama 等都行。
             LEADERS_AI_URL（默认 OpenAI 官方地址）、LEADERS_AI_MODEL（必填）、
             key 放环境变量 LEADERS_AI_KEY，或写在一个文件里、LEADERS_AI_KEY_FILE 指过去；本机模型可以不要 key。
+            带 key 时地址要用 https://（本机地址除外）；接口要跳到别的地址也不跟过去，免得把 key 带走。
             LEADERS_AI_MAX_TOKENS（可选）：回答最长多少 token。有的接口默认给得很少、写不完一批
             （Cloudflare Workers AI 默认 256，要设 4096 左右）；不设就不传，用接口自己的默认。
   command   任何「从标准输入读提示词、往标准输出写回答」的命令，LEADERS_AI_CMD 写整条命令，
             例如 claude -p、codex exec -、或者自己的脚本。
 
-key 只从环境变量或 key 文件现读，不写进代码、日志和输出；出错信息里的 key 会先抹掉再记。
+key 只从环境变量或 key 文件现读，不写进代码、日志和输出。出错信息记下来之前先抹一遍（见 scrub）：
+设的那把 key、环境变量里名字以 KEY / TOKEN / SECRET / PASSWORD 结尾的值、Bearer 后面那段、
+api_key=值 / --api-key 值 这类写法（名字以 key、token、secret、password 结尾的都算）、sk- 开头的。
 """
 from __future__ import annotations
 
@@ -21,14 +24,45 @@ import re
 import shlex
 import subprocess
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from youtube import OPENER   # 跟取 YouTube 同一套代理设置
+from youtube import opener   # 跟取 YouTube 同一套代理设置
 
 KIND_OK = {"播客", "访谈", "演讲", "座谈"}
 AI_VERSION = 1         # 判的规矩改了就加一，旧的判法作废重判
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """叫 AI 不跟跳转：urllib 跳转时会把 Authorization 原样带到新地址，key 可能被送到别的站。"""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+AI_OPENER = opener(_NoRedirect())
+
+_SECRET_NAME = r"[A-Za-z0-9_-]*(?:key|token|secret|password)"   # api_key、OPENAI_API_KEY、access_token、api-key……
+_SECRET_RES = (
+    (re.compile(r"(?i)bearer\s+\S+"), "Bearer ***"),
+    (re.compile(r"(?i)\b(" + _SECRET_NAME + r")(\W{0,3}[:=]\W{0,2})[^\s\"',&;]+"), r"\1\2***"),   # 名字=值、"名字": "值"
+    (re.compile(r"(?i)(?<![\w-])(--?" + _SECRET_NAME + r")\s+(?!-)[^\s\"',&;]+"), r"\1 ***"),                # --api-key 值
+    (re.compile(r"\bsk-[A-Za-z0-9_-]{6,}"), "sk-***"),
+)
+
+
+def scrub(s: str, key: str = "") -> str:
+    """出错信息记下来之前先抹掉像 key 的东西：设的那把、环境变量里名字以 KEY / TOKEN / SECRET / PASSWORD 结尾的值，
+    再按常见写法抹。先抹再截短，免得截在 key 中间漏半截。"""
+    known = {key} | {v for k, v in os.environ.items() if re.search(r"(?i)(key|token|secret|password)$", k)}
+    for k in sorted((k for k in known if len(k) >= 8), key=len, reverse=True):
+        s = s.replace(k, "***")
+    for pat, rep in _SECRET_RES:
+        s = pat.sub(rep, s)
+    return s
 
 
 class Provider:
@@ -54,13 +88,10 @@ class OpenAICompatible(Provider):
             raise ValueError("LEADERS_AI=openai 时要设 LEADERS_AI_MODEL")
         if key and not re.fullmatch(r"[\x21-\x7e]+", key):
             raise ValueError("key 里有空格、换行或非 ASCII 字符")
+        if key and url.lower().startswith("http://") and urllib.parse.urlsplit(url).hostname not in LOCAL_HOSTS:
+            raise ValueError("带 key 的接口要用 https://（本机地址除外），不然 key 会明文传出去")
         self.url, self.model, self._key, self.timeout = url, model, key, timeout
         self.max_tokens = max_tokens
-
-    def _clean(self, s: str) -> str:
-        if self._key:
-            s = s.replace(self._key, "***")
-        return re.sub(r"(?i)bearer\s+\S+", "Bearer ***", s)
 
     def ask(self, prompt: str) -> Optional[str]:
         payload = {"model": self.model, "messages": [{"role": "user", "content": prompt}]}
@@ -72,17 +103,20 @@ class OpenAICompatible(Provider):
             headers["Authorization"] = f"Bearer {self._key}"
         req = urllib.request.Request(self.url, data=body, headers=headers, method="POST")
         try:
-            with OPENER.open(req, timeout=self.timeout) as r:
+            with AI_OPENER.open(req, timeout=self.timeout) as r:
                 data = json.loads(r.read().decode("utf-8", "replace"))
         except urllib.error.HTTPError as e:
+            if 300 <= e.code < 400:
+                self.last_error = f"HTTP {e.code}：接口要跳到别的地址，不跟过去（会把 key 带过去）；LEADERS_AI_URL 直接写跳转后的地址"
+                return None
             try:
-                detail = e.read().decode("utf-8", "replace")[:300]
+                detail = e.read().decode("utf-8", "replace")[:2000]
             except Exception:
                 detail = ""
-            self.last_error = self._clean(f"HTTP {e.code} {detail}")
+            self.last_error = scrub(f"HTTP {e.code} {detail}", self._key)[:300]
             return None
         except Exception as e:
-            self.last_error = self._clean(f"{type(e).__name__}: {e}")[:300]
+            self.last_error = scrub(f"{type(e).__name__}: {e}", self._key)[:300]
             return None
         try:
             content = data["choices"][0]["message"]["content"]
@@ -111,11 +145,14 @@ class Command(Provider):
         try:
             r = subprocess.run(self.argv, input=prompt, capture_output=True, text=True, encoding="utf-8",
                                errors="replace", timeout=self.timeout)
-        except (OSError, subprocess.TimeoutExpired) as e:
-            self.last_error = f"命令调不起来或超时：{e!r:.150}"
+        except subprocess.TimeoutExpired:     # 不带命令原文：参数里可能写了 key
+            self.last_error = f"命令超过 {self.timeout} 秒没回"
+            return None
+        except OSError as e:
+            self.last_error = scrub(f"命令调不起来：{e}")[:150]
             return None
         if r.returncode != 0:
-            self.last_error = f"命令退出码 {r.returncode}：{(r.stderr or '').strip()[-150:]}"
+            self.last_error = f"命令退出码 {r.returncode}：" + scrub((r.stderr or "").strip())[-150:]
             return None
         return r.stdout
 
