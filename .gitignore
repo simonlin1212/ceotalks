@@ -1,0 +1,12 @@
+# 抓取出来的数据（累积库、页面数据、日志）
+data/
+site/data/
+*.log
+
+# 本机设置和 key
+config.env
+.env
+*.key
+
+__pycache__/
+.DS_Store

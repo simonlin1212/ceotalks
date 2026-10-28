@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CEO Talks · 科技领军人物亲口讲的长访谈</title>
+  <meta name="description" content="马斯克、黄仁勋、奥特曼等 AI 与科技公司领军人物，本人亲自上的播客、访谈、演讲，20 分钟以上，新的在前。剪辑、搬运、别人转述的不收。">
+  <link rel="canonical" href="https://ceotalks.online/">
+  <link rel="alternate" hreflang="zh-CN" href="https://ceotalks.online/">
+  <link rel="alternate" hreflang="en" href="https://ceotalks.online/en/">
+  <link rel="alternate" hreflang="x-default" href="https://ceotalks.online/">
+  <meta name="theme-color" content="#0c0b0a">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CEO Talks">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:title" content="CEO Talks · 科技领军人物亲口讲的长访谈">
+  <meta property="og:description" content="AI 与科技公司领军人物本人亲自上的播客、访谈、演讲，20 分钟以上，新的在前。">
+  <meta property="og:url" content="https://ceotalks.online/">
+  <meta property="og:image" content="https://ceotalks.online/brand/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- 西文字体从 Google Fonts 来，不挡页面；打不开（比如在国内）就用系统字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site">
+    <div class="in">
+      <a class="logo" href="#" aria-label="CEO Talks 首页"><img src="brand/logo.svg" alt="CEO Talks" width="237" height="48"></a>
+      <nav class="nav" aria-label="看哪些">
+        <span class="seg" id="seg">
+          <a href="#" data-v="all">全部</a>
+          <a href="#24h" data-v="24h">24 小时<b id="n24"></b></a>
+        </span>
+        <button type="button" class="nav-about" id="go-about">关于</button>
+        <a class="lang" id="lang" href="en/" hreflang="en" lang="en" title="Switch to English"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/></svg><span class="long">English</span><span class="short">EN</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="in hero-in">
+        <div class="hero-text">
+          <p class="kicker"><span class="live"></span>Long-form · First-hand</p>
+          <h1>听最顶尖的人，<br><em>亲口</em>讲。</h1>
+          <p class="lede" id="lede"></p>
+          <dl class="stats" id="stats"></dl>
+          <p class="status" id="status">在读……</p>
+        </div>
+        <div class="feature" id="feature"></div>
+      </div>
+    </section>
+
+    <nav class="bar" id="bar" aria-label="按人看">
+      <div class="in bar-in">
+        <button type="button" class="arr l" id="arr-l" aria-label="往左看" hidden>‹</button>
+        <div class="chips" id="chips"></div>
+        <button type="button" class="arr r" id="arr-r" aria-label="往右看" hidden>›</button>
+      </div>
+    </nav>
+
+    <div class="in content" id="feed"></div>
+
+  </main>
+
+  <section class="about" id="about">
+    <div class="in about-in">
+      <h2><small>About</small>关于 CEO Talks</h2>
+      <div>
+        <ul class="rules">
+          <li><b>收什么</b><span>名单上这些人亲自上的播客、访谈、演讲、座谈，20 分钟以上。</span></li>
+          <li><b>不收</b><span>别人讲他们的、剪辑、搬运、翻译配音。</span></li>
+          <li><b>中文</b><span>中文标题和一句话简介由 AI 根据原标题和简介写，可能有出入，以原视频为准。</span></li>
+          <li><b>版权</b><span>视频都在 YouTube 上，版权归原作者；本站只放标题、频道、封面图和链接，点开去 YouTube 看。</span></li>
+        </ul>
+        <p class="roster-h">现在的名单</p>
+        <p class="roster" id="roster"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="in foot-in">
+      <img src="brand/logo.svg" alt="CEO Talks" width="128" height="26">
+      <span>ceotalks.online</span>
+      <span>© 2026 CEO Talks</span>
+    </div>
+  </footer>
+  <noscript><p class="in">这个网页要开 JavaScript 才能看。</p></noscript>
+  <script src="app.js"></script>
+</body>
+</html>

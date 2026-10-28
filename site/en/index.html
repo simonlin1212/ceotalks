@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-root="../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CEO Talks · Tech leaders, in their own words</title>
+  <meta name="description" content="Long-form podcasts, interviews and talks where Elon Musk, Jensen Huang, Sam Altman and other AI and tech leaders speak for themselves. 20 minutes or longer, newest first. No clips, reuploads or commentary.">
+  <link rel="canonical" href="https://ceotalks.online/en/">
+  <link rel="alternate" hreflang="zh-CN" href="https://ceotalks.online/">
+  <link rel="alternate" hreflang="en" href="https://ceotalks.online/en/">
+  <link rel="alternate" hreflang="x-default" href="https://ceotalks.online/">
+  <meta name="theme-color" content="#0c0b0a">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../brand/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CEO Talks">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:title" content="CEO Talks · Tech leaders, in their own words">
+  <meta property="og:description" content="Podcasts, interviews and talks where AI and tech leaders speak for themselves. 20 minutes or longer, newest first.">
+  <meta property="og:url" content="https://ceotalks.online/en/">
+  <meta property="og:image" content="https://ceotalks.online/brand/og-en.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- 英文版：字和中文版的 index.html 一一对应，会变的字在 app.js 里；数据、图、样式都用上一层的 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="site">
+    <div class="in">
+      <a class="logo" href="#" aria-label="CEO Talks home"><img src="../brand/logo.svg" alt="CEO Talks" width="237" height="48"></a>
+      <nav class="nav" aria-label="Filter">
+        <span class="seg" id="seg">
+          <a href="#" data-v="all">All</a>
+          <a href="#24h" data-v="24h">Last 24h<b id="n24"></b></a>
+        </span>
+        <button type="button" class="nav-about" id="go-about">About</button>
+        <a class="lang" id="lang" href="../" hreflang="zh-CN" lang="zh-CN" title="切换到中文"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/></svg><span>中文</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="in hero-in">
+        <div class="hero-text">
+          <p class="kicker"><span class="live"></span>Long-form · First-hand</p>
+          <h1>Hear it from<br><em>the top.</em></h1>
+          <p class="lede" id="lede"></p>
+          <dl class="stats" id="stats"></dl>
+          <p class="status" id="status">Loading…</p>
+        </div>
+        <div class="feature" id="feature"></div>
+      </div>
+    </section>
+
+    <nav class="bar" id="bar" aria-label="Browse by person">
+      <div class="in bar-in">
+        <button type="button" class="arr l" id="arr-l" aria-label="Scroll left" hidden>‹</button>
+        <div class="chips" id="chips"></div>
+        <button type="button" class="arr r" id="arr-r" aria-label="Scroll right" hidden>›</button>
+      </div>
+    </nav>
+
+    <div class="in content" id="feed"></div>
+
+  </main>
+
+  <section class="about" id="about">
+    <div class="in about-in">
+      <h2><small>About</small>Straight from the source.</h2>
+      <div>
+        <ul class="rules">
+          <li><b>What's in</b><span>Podcasts, interviews, talks and panels where the people on this list speak for themselves. 20 minutes or longer.</span></li>
+          <li><b>What's not</b><span>Videos about them, clips, reuploads and dubbed translations.</span></li>
+          <li><b>Titles</b><span>Shown exactly as published on YouTube. The Chinese edition adds AI-written Chinese titles and summaries.</span></li>
+          <li><b>Rights</b><span>Every video lives on YouTube and belongs to its creator. We only show the title, channel, thumbnail and a link; you watch it on YouTube.</span></li>
+        </ul>
+        <p class="roster-h">Who's on the list</p>
+        <p class="roster" id="roster"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="in foot-in">
+      <img src="../brand/logo.svg" alt="CEO Talks" width="128" height="26">
+      <span>ceotalks.online</span>
+      <span>© 2026 CEO Talks</span>
+    </div>
+  </footer>
+  <noscript><p class="in">This site needs JavaScript.</p></noscript>
+  <script src="../app.js"></script>
+</body>
+</html>
