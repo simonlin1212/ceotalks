@@ -50,11 +50,10 @@ CEO Talks 定时去 YouTube 搜一遍名单上的人，**只留下本人亲自�
 
 <table>
 <tr>
-<td width="62%" valign="top"><img src="assets/screenshots/2026-10-28/home-zh.jpg" alt="中文版首页"><br><b>中文版首页</b>：一句话说明、三个数、上次更新时间、最新一期大卡片，下面是人名栏和按时间分段的列表</td>
-<td width="38%" valign="top"><img src="assets/screenshots/2026-10-28/mobile-zh.jpg" alt="手机上看"><br><b>手机上看</b>：人名栏横着滑，往下翻也停在顶上</td>
+<td><img src="assets/screenshots/2026-10-28/home-zh.jpg" alt="中文版首页"><br><b>中文版首页</b>：一句话说明、三个数、上次更新时间、最新一期大卡片，下面是人名栏和按时间分段的列表</td>
 </tr>
 <tr>
-<td colspan="2"><img src="assets/screenshots/2026-10-28/home-en.jpg" alt="英文版首页"><br><b>英文版</b>：全英文，只放 YouTube 原标题；右上角切回中文</td>
+<td><img src="assets/screenshots/2026-10-28/home-en.jpg" alt="英文版首页"><br><b>英文版</b>：全英文，只放 YouTube 原标题；右上角切回中文</td>
 </tr>
 </table>
 

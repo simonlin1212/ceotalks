@@ -50,11 +50,10 @@ CEO Talks searches YouTube on a schedule for everyone on the list, **keeps only 
 
 <table>
 <tr>
-<td width="62%" valign="top"><img src="assets/screenshots/2026-10-28/home-en.jpg" alt="English home page"><br><b>English home page</b>: a one-line description, three counters, last update time, the latest episode as a large card, then the people bar and the time-grouped list</td>
-<td width="38%" valign="top"><img src="assets/screenshots/2026-10-28/mobile-zh.jpg" alt="On a phone"><br><b>On a phone</b> (Chinese version): the people bar scrolls sideways and stays pinned to the top</td>
+<td><img src="assets/screenshots/2026-10-28/home-en.jpg" alt="English home page"><br><b>English home page</b>: a one-line description, three counters, last update time, the latest episode as a large card, then the people bar and the time-grouped list</td>
 </tr>
 <tr>
-<td colspan="2"><img src="assets/screenshots/2026-10-28/home-zh.jpg" alt="Chinese home page"><br><b>Chinese version</b>: adds a Chinese title, the original title and a one-line summary to each video</td>
+<td><img src="assets/screenshots/2026-10-28/home-zh.jpg" alt="Chinese home page"><br><b>Chinese version</b>: adds a Chinese title, the original title and a one-line summary to each video</td>
 </tr>
 </table>
 
