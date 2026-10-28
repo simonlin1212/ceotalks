@@ -6,6 +6,8 @@
   openai    任何「OpenAI 兼容」的聊天接口：OpenAI、DeepSeek、OpenRouter、智谱、本机 Ollama 等都行。
             LEADERS_AI_URL（默认 OpenAI 官方地址）、LEADERS_AI_MODEL（必填）、
             key 放环境变量 LEADERS_AI_KEY，或写在一个文件里、LEADERS_AI_KEY_FILE 指过去；本机模型可以不要 key。
+            LEADERS_AI_MAX_TOKENS（可选）：回答最长多少 token。有的接口默认给得很少、写不完一批
+            （Cloudflare Workers AI 默认 256，要设 4096 左右）；不设就不传，用接口自己的默认。
   command   任何「从标准输入读提示词、往标准输出写回答」的命令，LEADERS_AI_CMD 写整条命令，
             例如 claude -p、codex exec -、或者自己的脚本。
 
@@ -44,7 +46,7 @@ class Provider:
 class OpenAICompatible(Provider):
     name = "openai"
 
-    def __init__(self, url: str, model: str, key: str, timeout: int):
+    def __init__(self, url: str, model: str, key: str, timeout: int, max_tokens: int = 0):
         super().__init__()
         if not re.match(r"https?://", url):
             raise ValueError("LEADERS_AI_URL 要以 http:// 或 https:// 开头")
@@ -53,6 +55,7 @@ class OpenAICompatible(Provider):
         if key and not re.fullmatch(r"[\x21-\x7e]+", key):
             raise ValueError("key 里有空格、换行或非 ASCII 字符")
         self.url, self.model, self._key, self.timeout = url, model, key, timeout
+        self.max_tokens = max_tokens
 
     def _clean(self, s: str) -> str:
         if self._key:
@@ -60,7 +63,10 @@ class OpenAICompatible(Provider):
         return re.sub(r"(?i)bearer\s+\S+", "Bearer ***", s)
 
     def ask(self, prompt: str) -> Optional[str]:
-        body = json.dumps({"model": self.model, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
+        payload = {"model": self.model, "messages": [{"role": "user", "content": prompt}]}
+        if self.max_tokens:
+            payload["max_tokens"] = self.max_tokens
+        body = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if self._key:
             headers["Authorization"] = f"Bearer {self._key}"
@@ -126,7 +132,8 @@ def from_env(override: Optional[str] = None) -> Provider:
             with open(os.path.expanduser(kf), encoding="utf-8") as f:
                 key = f.read().strip()
         return OpenAICompatible(os.environ.get("LEADERS_AI_URL") or "https://api.openai.com/v1/chat/completions",
-                                (os.environ.get("LEADERS_AI_MODEL") or "").strip(), key, timeout)
+                                (os.environ.get("LEADERS_AI_MODEL") or "").strip(), key, timeout,
+                                int(os.environ.get("LEADERS_AI_MAX_TOKENS") or 0))
     if kind == "command":
         return Command(os.environ.get("LEADERS_AI_CMD") or "", timeout)
     raise ValueError(f"LEADERS_AI 只能是 off / openai / command，现在是 {kind!r}")

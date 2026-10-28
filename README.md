@@ -42,7 +42,7 @@ CEO Talks 定时去 YouTube 搜一遍名单上的人，**只留下本人亲自�
 - **什么都不用装**：抓取端只用 Python 3.9 自带的库，不用 `pip install`、不用申请 YouTube key；网站是纯 HTML + CSS + JS，不用打包，放到任何静态托管上就能用。
 - **越攒越全**：判过的视频存在本机的库里，以后不再判，留 400 天；每一轮只把新出现的候选交给 AI。
 
-> 当前版本 v1.0.0（2026-10-28）：第一个版本。抓取端、中英双语网站、三种 AI 接法，13 条离线自测。
+> 当前版本 v1.0.0（2026-10-28）：第一个版本。抓取端、中英双语网站、三种 AI 接法，14 条离线自测。
 
 ---
 
@@ -190,7 +190,7 @@ python3 -I fetcher/check_ai.py --n 16
 <tr><td nowrap><code>  --page-only</code></td><td>不搜、不叫 AI，只用库里现有的重出页面数据（改了名单里的名字、头衔后用）；更新时间照最近一轮写</td></tr>
 <tr><td nowrap><code>python3 -I fetcher/check_ai.py</code></td><td>换 AI 前对一批判法；<code>--n</code> 对几条（默认 16），<code>--ai openai|command</code> 临时换一种</td></tr>
 <tr><td nowrap><code>node dev/serve.mjs [端口]</code></td><td>本机预览网站，默认 8860，只听 127.0.0.1，不缓存</td></tr>
-<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>13 条离线自测</td></tr>
+<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>14 条离线自测</td></tr>
 <tr><td nowrap><code>python3 -I brand/make_logo.py</code></td><td>重画标志：写出 <code>site/brand/</code> 下的 <code>mark.svg</code>、<code>logo.svg</code>、<code>logo-light.svg</code> 和 <code>site/favicon.svg</code></td></tr>
 <tr><td nowrap><code>zsh brand/make_images.sh</code></td><td>用本机 Chrome 截出中英文分享图和手机图标（macOS 的 Chrome 路径）</td></tr>
 </table>
@@ -208,10 +208,12 @@ python3 -I fetcher/check_ai.py --n 16
 <tr><td nowrap><code>LEADERS_AI_KEY_FILE</code></td><td nowrap>—</td><td>key 写在这个文件里（只放 key 本身），没设 <code>LEADERS_AI_KEY</code> 时读它</td></tr>
 <tr><td nowrap><code>LEADERS_AI_CMD</code></td><td nowrap>—</td><td><code>command</code> 时要跑的整条命令</td></tr>
 <tr><td nowrap><code>LEADERS_AI_TIMEOUT</code></td><td nowrap><code>180</code></td><td>叫一次 AI 最多等几秒</td></tr>
+<tr><td nowrap><code>LEADERS_AI_MAX_TOKENS</code></td><td nowrap>不传</td><td><code>openai</code> 时回答最长多少 token。有的接口默认给得很少、写不完一批（Cloudflare Workers AI 默认 256），要设 <code>4096</code> 左右</td></tr>
 <tr><td nowrap><code>LEADERS_DATA</code></td><td nowrap><code>data/</code></td><td>累积库 <code>store.json</code>、锁文件、AI 回乱码时的原话放哪</td></tr>
 <tr><td nowrap><code>LEADERS_OUT</code></td><td nowrap><code>site/data/leaders.json</code></td><td>给网站读的页面数据写到哪</td></tr>
 <tr><td nowrap><code>LEADERS_PEOPLE</code></td><td nowrap><code>fetcher/people.json</code></td><td>用哪份名单</td></tr>
 <tr><td nowrap><code>LEADERS_NO_PROXY</code></td><td nowrap>不设</td><td>不设时照系统的 <code>HTTPS_PROXY</code> 走；设成 <code>1</code> 强制直连</td></tr>
+<tr><td nowrap><code>LEADERS_MAX_PAGES</code></td><td nowrap><code>30</code></td><td>一轮最多开几个视频页（拿准确时间和完整简介），<code>0</code> = 不开。机房的机器（GitHub Actions、云服务器）开视频页第一下就要人机验证，在那里跑设 <code>0</code>，页面上的时间就一直是大约的</td></tr>
 </table>
 
 ### 名单（`fetcher/people.json`）
@@ -381,7 +383,7 @@ ceotalks/
 │   └── og.html · og-en.html · touch.html   分享图、手机图标的版式
 ├── assets/screenshots/      README 里的截图
 ├── dev/serve.mjs            本机预览用的小服务器
-├── tests/test_offline.py    13 条离线自测
+├── tests/test_offline.py    14 条离线自测
 ├── config.example.env       设置示例
 ├── README.md · README_en.md · CHANGELOG.md · LICENSE
 └── data/                    累积库（跑了抓取才有，不进仓库）
@@ -389,7 +391,7 @@ ceotalks/
 
 ## 开发与自测
 
-不联网，13 条：认名字（全名和姓、只有名要带上下文、头衔什么时候算）、AI 回话的几种格式怎么认、同一场去重的规则、认不出的回话留原话、OpenAI 兼容接口和本机命令两种接法、key 不出现在报错里、本机模型可以不要 key、设置不对时报什么、AI 关着时只放哪些、每个人中英文头衔都有。
+不联网，14 条：认名字（全名和姓、只有名要带上下文、头衔什么时候算）、AI 回话的几种格式怎么认、同一场去重的规则、认不出的回话留原话、OpenAI 兼容接口和本机命令两种接法、回答长度设置、key 不出现在报错里、本机模型可以不要 key、设置不对时报什么、AI 关着时只放哪些、每个人中英文头衔都有。
 
 ```bash
 python3 -I tests/test_offline.py

@@ -11,11 +11,14 @@
 3. 一批交给 AI 判：是不是本人在讲，还是别人讲这个人、解说、剪辑、搬运；顺带给中文标题和一句话讲什么。判过的不重判。
 4. 只给判下来要收的开视频页，拿准确的发布时间、时长（串行、隔 2 秒、一轮最多 30 个；碰到 429 或人机验证就停这一轮）。
    实测一口气开 60 多个视频页 YouTube 就要人机验证，所以不给每个候选都开。
+   机房的机器（如 GitHub Actions）开视频页第一下就要人机验证，在那种地方跑设 LEADERS_MAX_PAGES=0 不开，
+   页面上的时间就一直是大约的，AI 也只看得到搜索页的短摘要。
 5. AI 没开或不通：people.json 里认的官方频道和访谈节目先照放（页面标「没判」），其余等 AI 判。
 
 文件（都能用环境变量改）：
 - LEADERS_DATA（默认 项目/data）：累积库 store.json（搜索只给最近的，历史靠它留着）、锁 .lock、AI 回乱码时的原话。
 - LEADERS_OUT（默认 项目/site/data/leaders.json）：给页面读的数据。
+- LEADERS_MAX_PAGES（默认 30）：一轮最多开几个视频页，0 = 不开。
 
 跑法: python3 -I fetcher/leaders.py [--backfill] [--ai off|openai|command] [--only 人名键,...]
 """
@@ -45,7 +48,7 @@ LOCK = os.path.join(DATA, ".lock")
 AI_BAD = os.path.join(DATA, "ai_bad_last.txt")
 
 GAP = 2.0              # 两次请求之间隔几秒（串行）
-MAX_PAGES = 30         # 一轮最多打开多少个视频页，多的下一轮接着开
+MAX_PAGES = int(os.environ.get("LEADERS_MAX_PAGES") or 30)   # 一轮最多打开多少个视频页，多的下一轮接着开；0 = 不开
 PAGE_TRIES = 3         # 同一个视频页开三次都失败就不再开，按大约时间放
 MIN_SEC = 20 * 60      # 正片门槛：20 分钟
 KEEP_SHOW = 20         # 每人页面上放多少条

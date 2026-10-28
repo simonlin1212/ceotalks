@@ -1,6 +1,6 @@
 # ceotalks.online 的线上更新：GitHub 的机器跑一轮 fetcher/（跟本仓库给大家的是同一份程序），
 # 判完把 site/ 传到 Cloudflare。累积库放在本仓库的 data 分支，只留一个提交，每轮覆盖。
-# 只在 simonlin1212/ceotalks 上跑；fork 后要自己用，改掉下面 jobs.update.if 里的仓库名，再按 README「自己部署」设好。
+# 只在 simonlin1212/ceotalks 上跑；fork 后要自己用，改掉下面 jobs.update.if 里的仓库名，再按 README「部署上线」设好。
 #
 # 要的设置（仓库 Settings → Secrets and variables → Actions）：
 #   secrets.CLOUDFLARE_API_TOKEN   Cloudflare 令牌：能部署 Workers；要 AI 的话还要能用 Workers AI
@@ -74,6 +74,8 @@ jobs:
           LEADERS_AI_MODEL: ${{ vars.LEADERS_AI_MODEL }}
           LEADERS_AI_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           LEADERS_AI_TIMEOUT: "240"
+          LEADERS_AI_MAX_TOKENS: "4096"   # Workers AI 默认只给 256，写不完一批
+          LEADERS_MAX_PAGES: "0"          # GitHub 的机器开视频页第一下就要人机验证（10-28 实测三次都是），不开
         run: |
           if [ "$AI_INPUT" != off ] && [ -n "$LEADERS_AI_KEY" ] && [ -n "$LEADERS_AI_MODEL" ] && [ -n "$CF_ACCOUNT" ]; then
             export LEADERS_AI=openai

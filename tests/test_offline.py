@@ -125,6 +125,17 @@ class Providers(unittest.TestCase):
         self.assertEqual(_Handler.seen["auth"], "Bearer sk-test-123")
         self.assertEqual(_Handler.seen["body"]["messages"][0]["content"], "你好")
         self.assertEqual(_Handler.seen["body"]["model"], "m1")
+        self.assertNotIn("max_tokens", _Handler.seen["body"])   # 不设就不传
+
+    def test_max_tokens_from_env(self):
+        os.environ.update(LEADERS_AI_URL=self.url, LEADERS_AI_MODEL="m1", LEADERS_AI_MAX_TOKENS="4096")
+        try:
+            p = J.from_env("openai")
+        finally:
+            for k in ("LEADERS_AI_URL", "LEADERS_AI_MODEL", "LEADERS_AI_MAX_TOKENS"):
+                os.environ.pop(k, None)
+        self.assertIsNotNone(p.ask("x"))
+        self.assertEqual(_Handler.seen["body"]["max_tokens"], 4096)
 
     def test_openai_error_hides_key(self):
         p = J.OpenAICompatible(self.url, "bad", "sk-test-123", 10)

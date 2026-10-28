@@ -42,7 +42,7 @@ CEO Talks searches YouTube on a schedule for everyone on the list, **keeps only 
 - **Nothing to install**: the fetcher uses only the Python 3.9 standard library. No `pip install`, no YouTube API key. The site is plain HTML + CSS + JS with no build step; drop it on any static host.
 - **The archive keeps growing**: judged videos are stored in a local database, never judged twice, and kept for 400 days. Each run only sends newly found candidates to the AI.
 
-> Current version v1.0.0 (2026-10-28): first release. Fetcher, bilingual site, three ways to plug in AI, 13 offline tests.
+> Current version v1.0.0 (2026-10-28): first release. Fetcher, bilingual site, three ways to plug in AI, 14 offline tests.
 
 ---
 
@@ -190,7 +190,7 @@ python3 -I fetcher/check_ai.py --n 16
 <tr><td nowrap><code>  --page-only</code></td><td>No search, no AI: rebuild the page data from the archive (after editing names or titles in the list); the update time stays that of the last real run</td></tr>
 <tr><td nowrap><code>python3 -I fetcher/check_ai.py</code></td><td>Compare judgments before switching AI; <code>--n</code> how many (default 16), <code>--ai openai|command</code> to override</td></tr>
 <tr><td nowrap><code>node dev/serve.mjs [port]</code></td><td>Preview the site locally; default 8860, listens on 127.0.0.1 only, no caching</td></tr>
-<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>13 offline tests</td></tr>
+<tr><td nowrap><code>python3 -I tests/test_offline.py</code></td><td>14 offline tests</td></tr>
 <tr><td nowrap><code>python3 -I brand/make_logo.py</code></td><td>Redraw the logo: writes <code>mark.svg</code>, <code>logo.svg</code>, <code>logo-light.svg</code> under <code>site/brand/</code> and <code>site/favicon.svg</code></td></tr>
 <tr><td nowrap><code>zsh brand/make_images.sh</code></td><td>Render the Chinese and English share images and app icons with the local Chrome (macOS Chrome path)</td></tr>
 </table>
@@ -208,10 +208,12 @@ Exit codes: `0` normal (including "another round is still running, skipped"); `2
 <tr><td nowrap><code>LEADERS_AI_KEY_FILE</code></td><td nowrap>—</td><td>File containing only the key; read when <code>LEADERS_AI_KEY</code> isn't set</td></tr>
 <tr><td nowrap><code>LEADERS_AI_CMD</code></td><td nowrap>—</td><td>Full command to run for <code>command</code></td></tr>
 <tr><td nowrap><code>LEADERS_AI_TIMEOUT</code></td><td nowrap><code>180</code></td><td>Seconds to wait for one AI call</td></tr>
+<tr><td nowrap><code>LEADERS_AI_MAX_TOKENS</code></td><td nowrap>not sent</td><td>For <code>openai</code>: the longest answer, in tokens. Some endpoints default to too little to finish a batch (Cloudflare Workers AI defaults to 256); set it to about <code>4096</code></td></tr>
 <tr><td nowrap><code>LEADERS_DATA</code></td><td nowrap><code>data/</code></td><td>Where the archive <code>store.json</code>, the lock file and unreadable AI replies go</td></tr>
 <tr><td nowrap><code>LEADERS_OUT</code></td><td nowrap><code>site/data/leaders.json</code></td><td>Where the page data is written</td></tr>
 <tr><td nowrap><code>LEADERS_PEOPLE</code></td><td nowrap><code>fetcher/people.json</code></td><td>Which list to use</td></tr>
 <tr><td nowrap><code>LEADERS_NO_PROXY</code></td><td nowrap>unset</td><td>Unset: follow the system <code>HTTPS_PROXY</code>; set to <code>1</code> to force a direct connection</td></tr>
+<tr><td nowrap><code>LEADERS_MAX_PAGES</code></td><td nowrap><code>30</code></td><td>The most video pages to open per run (for exact times and full descriptions); <code>0</code> = none. Data-center machines (GitHub Actions, cloud servers) get a bot check on the very first video page, so set <code>0</code> there; times on the site then stay approximate</td></tr>
 </table>
 
 ### The list (`fetcher/people.json`)
@@ -381,7 +383,7 @@ ceotalks/
 │   └── og.html · og-en.html · touch.html   Layouts for the share images and app icon
 ├── assets/screenshots/      Screenshots used in the README
 ├── dev/serve.mjs            Tiny local preview server
-├── tests/test_offline.py    13 offline tests
+├── tests/test_offline.py    14 offline tests
 ├── config.example.env       Example settings
 ├── README.md · README_en.md · CHANGELOG.md · LICENSE
 └── data/                    Archive (created by the fetcher, not committed)
@@ -389,7 +391,7 @@ ceotalks/
 
 ## Development and Tests
 
-Offline, 13 tests: name matching (full name and surname, first names needing context, when titles count), the reply formats the AI parser accepts, the duplicate rules, saving unreadable replies, the OpenAI-compatible and local-command providers, keys never appearing in errors, local models without a key, what bad settings report, what's shown with AI off, and that every person has both Chinese and English titles.
+Offline, 14 tests: name matching (full name and surname, first names needing context, when titles count), the reply formats the AI parser accepts, the duplicate rules, saving unreadable replies, the OpenAI-compatible and local-command providers, the answer-length setting, keys never appearing in errors, local models without a key, what bad settings report, what's shown with AI off, and that every person has both Chinese and English titles.
 
 ```bash
 python3 -I tests/test_offline.py
