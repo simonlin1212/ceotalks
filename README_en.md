@@ -30,7 +30,7 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-<p align="center"><img src="site/brand/og.png" width="760" alt="CEO Talks"></p>
+<p align="center"><img src="assets/hero/hero-en.jpg" alt="CEO Talks: long talks by 13 AI and tech leaders, in their own words"></p>
 
 Musk, Jensen Huang, Lisa Su, Altman, Hassabis: they show up on YouTube many times a week, but most of those videos are other people talking about them. Commentary, clips, reuploads, dubbed translations.
 CEO Talks searches YouTube on a schedule for everyone on the list, **keeps only long videos where the person is actually on camera speaking**, builds up an ever-growing archive, and generates a bilingual static website: the latest episode up top, then everything grouped by time, filterable by person or by the last 24 hours.
@@ -399,6 +399,7 @@ ceotalks/
 │   └── og.html · og-en.html · touch.html   Layouts for the share images and app icon
 ├── deploy/                  Cloudflare Workers deploy settings (wrangler.jsonc + worker.js that redirects www + package.json · package-lock.json pinning wrangler)
 ├── .github/workflows/update-site.yml   GitHub Actions: fetch, save and upload every 2 hours
+├── assets/hero/             README hero image (photo credits and license in PHOTO_CREDITS.md)
 ├── assets/screenshots/      Screenshots used in the README
 ├── dev/serve.mjs            Tiny local preview server
 ├── tests/test_offline.py    19 offline tests
@@ -461,5 +462,7 @@ See [CHANGELOG.md](CHANGELOG.md). v1.0.0 (2026-10-28) is the first release.
 ## License
 
 [Apache License 2.0](LICENSE)
+
+The photos in the hero image (`assets/hero/`) come from Wikimedia Commons and are not covered by Apache 2.0; the hero image is shared under CC BY-SA 4.0. Authors and licenses for each photo are in [PHOTO_CREDITS.md](assets/hero/PHOTO_CREDITS.md).
 
 **Author:** Simon Lin · X [@linsizhen](https://x.com/linsizhen) · Email: [simonlin0423@gmail.com](mailto:simonlin0423@gmail.com)

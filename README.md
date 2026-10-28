@@ -30,7 +30,7 @@
   <a href="CHANGELOG.md">更新日志</a>
 </p>
 
-<p align="center"><img src="site/brand/og.png" width="760" alt="CEO Talks"></p>
+<p align="center"><img src="assets/hero/hero-zh.jpg" alt="CEO Talks：13 位 AI 与科技领军人物，本人亲口讲的长视频"></p>
 
 马斯克、黄仁勋、苏姿丰、奥特曼、哈萨比斯……这些人每周都在 YouTube 上出现很多次，但大部分是别人在讲他们：解说、剪辑、搬运、翻译配音。
 CEO Talks 定时去 YouTube 搜一遍名单上的人，**只留下本人亲自出镜讲的长视频**，攒成一个越来越全的库，再生成一个中英双语的静态网站：首屏放最新一期，下面按时间分段，可以按人看、只看 24 小时内新的。
@@ -399,6 +399,7 @@ ceotalks/
 │   └── og.html · og-en.html · touch.html   分享图、手机图标的版式
 ├── deploy/                  传到 Cloudflare Workers 的设置（wrangler.jsonc + www 跳主域名的 worker.js + 锁定 wrangler 版本的 package.json · package-lock.json）
 ├── .github/workflows/update-site.yml   GitHub Actions：每 2 小时抓一轮、存库、上传
+├── assets/hero/             README 首图（照片署名和授权见里面的 PHOTO_CREDITS.md）
 ├── assets/screenshots/      README 里的截图
 ├── dev/serve.mjs            本机预览用的小服务器
 ├── tests/test_offline.py    19 条离线自测
@@ -461,5 +462,7 @@ YouTube 偶尔不给正常页面，这一轮记成「没取全」，页面上会
 ## License
 
 [Apache License 2.0](LICENSE)
+
+首图（`assets/hero/`）里的人物照片来自维基共享资源，不在 Apache 2.0 范围内，按 CC BY-SA 4.0 共享；每张的作者和授权见 [PHOTO_CREDITS.md](assets/hero/PHOTO_CREDITS.md)。
 
 **作者：** Simon 林 · X [@linsizhen](https://x.com/linsizhen) · 邮箱：[simonlin0423@gmail.com](mailto:simonlin0423@gmail.com)
