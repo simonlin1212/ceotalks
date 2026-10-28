@@ -12,6 +12,7 @@
 - **名单**（`fetcher/people.json`）：13 位人物的中英文名和头衔、认名字的规则、认的官方频道和访谈节目；加人删人不改代码。
 - **网站**（`site/`，纯静态）：中文版 `/`、英文版 `/en/`，右上角切换并停在同一个人；首屏最新一期，所有人按「24 小时内 / 最近 7 天 / 最近 30 天 / 更早」分段，可按人看、只看 24 小时内，网址记着看什么；开着时每 5 分钟重读数据；各自的分享图、`canonical`、`hreflang`。
 - **设置**：`LEADERS_AI_MAX_TOKENS`（回答最长多少 token，Cloudflare Workers AI 默认只给 256，要设）、`LEADERS_MAX_PAGES`（一轮最多开几个视频页，机房的机器上设 0）。
+- **线上更新**（`.github/workflows/update-site.yml` + `deploy/`）：GitHub Actions 每 2 小时跑一轮，取 `data` 分支上的累积库 → 抓 → 叫 AI 判（任何 OpenAI 兼容接口，地址、模型、key 都在仓库设置里）→ 存回 `data` 分支 → 用 wrangler 传到 Cloudflare Workers；也能手动点，选只跑某几个人、关 AI、不存、不传。GitHub 的机器开不了 YouTube 视频页，这条路上不开（时间是大约的）。
 - **命令**：`--backfill`（第一次填库，搜今年）、`--only`（只跑某几个人）、`--page-only`（不搜、不叫 AI，只重出页面数据）、`check_ai.py`（换 AI 前对一批判法，不改库）、`dev/serve.mjs`（本机预览）。
 - **标志和分享图**：`brand/make_logo.py` 画标志，`brand/make_images.sh` 用本机 Chrome 截中英文分享图和手机图标。
 

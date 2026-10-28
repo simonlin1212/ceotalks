@@ -12,6 +12,8 @@
 name: 更新网站
 
 on:
+  schedule:
+    - cron: "40 */2 * * *"   # 每 2 小时一轮（UTC），避开整点那阵排队
   workflow_dispatch:
     inputs:
       only:

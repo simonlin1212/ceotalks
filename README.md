@@ -261,7 +261,7 @@ python3 -I fetcher/check_ai.py --n 16
 <tr><td nowrap>加一个人</td><td>在 <code>people.json</code> 的 <code>people</code> 里加一条，再 <code>python3 -I fetcher/leaders.py --only 新的键 --backfill</code></td></tr>
 <tr><td nowrap>只改了名字或头衔</td><td><code>python3 -I fetcher/leaders.py --page-only</code>（不搜、不叫 AI）</td></tr>
 <tr><td nowrap>只看一个人 / 只看 24 小时内</td><td>网址后面加 <code>#who=jensen</code> / <code>#24h</code>，两样能叠：<code>#24h&who=jensen</code></td></tr>
-<tr><td nowrap>每 2 小时自动更新</td><td>用 crontab 定时跑，见「部署上线」</td></tr>
+<tr><td nowrap>每 2 小时自动更新</td><td>用 crontab 或 GitHub Actions 定时跑，见「部署上线」</td></tr>
 <tr><td nowrap>拿数据接自己的前端</td><td>读 <code>site/data/leaders.json</code>，格式见「页面数据格式」</td></tr>
 </table>
 
@@ -314,16 +314,33 @@ site/index.html（中文）· site/en/index.html（英文）
 
 ## 部署上线
 
-网站是纯静态的：`site/` 整个放到任何静态托管上就行（Cloudflare Pages、GitHub Pages、Netlify、自己的服务器）。
+网站是纯静态的：`site/` 整个放到任何静态托管上就行（Cloudflare Workers / Pages、GitHub Pages、Netlify、自己的服务器）。
 
 1. **换成你的域名**：两个页面（`site/index.html`、`site/en/index.html`）里写的是 `ceotalks.online`，部署到别的域名时，把 `canonical`、`hreflang`、`og:url`、`og:image` 和页脚的域名一起换掉。分享图上也印着域名：改 `brand/og.html`、`brand/og-en.html` 里那一行，再跑 `zsh brand/make_images.sh` 重截。
-2. **定时跑抓取**：在一台能上 YouTube 的机器上定时跑，再把 `site/data/leaders.json` 传到托管上。比如每 2 小时跑一次的 crontab：
+2. **定时跑抓取**：下面两种跑法选一种。页面上会显示上次更新时间，超过 8 小时没更新会标出来。
+
+**跑法一：自己的机器（crontab）**。在一台能上 YouTube 的机器上定时跑，再把 `site/data/leaders.json` 传到托管上。比如每 2 小时跑一次的 crontab：
 
 ```
 25 */2 * * * cd /path/to/ceotalks && mkdir -p data && . ./config.env && python3 -I fetcher/leaders.py >> data/run.log 2>&1
 ```
 
-同一时间只会跑一轮（文件锁），上一轮没跑完，这一轮直接跳过。页面上会显示上次更新时间，超过 8 小时没更新会标出来。
+同一时间只会跑一轮（文件锁），上一轮没跑完，这一轮直接跳过。
+
+**跑法二：GitHub Actions + Cloudflare（ceotalks.online 用的就是这个）**。`.github/workflows/update-site.yml` 每 2 小时跑一轮：取累积库 → 抓 → 叫 AI 判 → 存库 → 把 `site/` 传到 Cloudflare Workers（部署设置在 `deploy/`）。累积库放在本仓库的 `data` 分支，只留一个提交、每轮覆盖。在仓库 Settings → Secrets and variables → Actions 里设好下面几样：
+
+<table>
+<tr><th nowrap>名字</th><th nowrap>放在</th><th>是什么</th></tr>
+<tr><td nowrap><code>LEADERS_AI_URL</code></td><td nowrap>Variables</td><td>AI 接口地址，任何 OpenAI 兼容接口，写到 <code>/chat/completions</code></td></tr>
+<tr><td nowrap><code>LEADERS_AI_MODEL</code></td><td nowrap>Variables</td><td>模型名</td></tr>
+<tr><td nowrap><code>LEADERS_AI_KEY</code></td><td nowrap>Secrets</td><td>这个接口的 key</td></tr>
+<tr><td nowrap><code>CLOUDFLARE_API_TOKEN</code></td><td nowrap>Secrets</td><td>Cloudflare 令牌：用「Edit Cloudflare Workers」模板建；绑自己的域名再加一项 Zone → DNS → Edit；账号和域名都只选你自己的</td></tr>
+<tr><td nowrap><code>CLOUDFLARE_ACCOUNT_ID</code></td><td nowrap>Variables</td><td>Cloudflare 账号 ID</td></tr>
+</table>
+
+AI 那三样缺一样，这一轮就不叫 AI（照「AI 关着」的规矩放）；Cloudflare 那两样缺一样就不上传。key 和令牌都放 Secrets，不进代码和日志。fork 过去自己用：把 workflow 里 `jobs.update.if` 的仓库名、`deploy/wrangler.jsonc` 里的名字和域名换成你的。也可以在 Actions 页面手动点「更新网站」跑一轮，能选只跑某几个人、搜今年、关 AI、不存库、不上传。
+
+GitHub 的机器打开 YouTube 视频页第一下就要人机验证（2026-10 实测），所以这条路上 `LEADERS_MAX_PAGES=0`：不开视频页，上传时间按搜索页上的「几小时前」估，页面上标「约」；AI 也只看得到搜索页上的那一小段简介。要准确时间，用跑法一。公开仓库跑 Actions 不花钱；私有仓库每月 2,000 分钟免费，一轮约 3 分钟，每 2 小时一轮够用，每小时一轮会超。
 
 ## 页面数据格式
 
@@ -381,6 +398,8 @@ ceotalks/
 │   ├── make_logo.py         画标志
 │   ├── make_images.sh       截分享图和手机图标
 │   └── og.html · og-en.html · touch.html   分享图、手机图标的版式
+├── deploy/                  传到 Cloudflare Workers 的设置（wrangler.jsonc + www 跳主域名的 worker.js）
+├── .github/workflows/update-site.yml   GitHub Actions：每 2 小时抓一轮、存库、上传
 ├── assets/screenshots/      README 里的截图
 ├── dev/serve.mjs            本机预览用的小服务器
 ├── tests/test_offline.py    14 条离线自测
@@ -408,7 +427,7 @@ AI 关着时只放认得的官方频道和访谈节目上的，内容会少很�
 YouTube 偶尔不给正常页面，这一轮记成「没取全」，页面上会标出来，下一轮再搜。碰到 429 或人机验证，这一轮就不再请求 YouTube，别马上重跑。一轮最多打开 30 个视频页、每次隔 2 秒，就是为了不被拦。
 
 **Q：能放在 GitHub Actions 之类的云端定时跑吗？**
-能跑，但机房的地址更容易被 YouTube 要求人机验证。家里或办公室能上 YouTube 的机器最稳。
+能，仓库里就带着一份（见「部署上线」跑法二）。搜索页能正常取，视频页会被要求人机验证，所以那边不开视频页、时间是大约的。要准确时间，用家里或办公室能上 YouTube 的机器跑。
 
 **Q：国内跑不通？**
 要能上 YouTube。抓取默认照系统的 `HTTPS_PROXY` 走；不想走代理设 `LEADERS_NO_PROXY=1`。

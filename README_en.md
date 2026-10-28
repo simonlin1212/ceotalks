@@ -261,7 +261,7 @@ Two more tables: `official_channels` (official company channel names, counted on
 <tr><td nowrap>Add a person</td><td>Add an entry under <code>people</code> in <code>people.json</code>, then <code>python3 -I fetcher/leaders.py --only new_key --backfill</code></td></tr>
 <tr><td nowrap>I only changed a name or title</td><td><code>python3 -I fetcher/leaders.py --page-only</code> (no search, no AI)</td></tr>
 <tr><td nowrap>Link to one person / the last 24 hours</td><td>Append <code>#who=jensen</code> / <code>#24h</code> to the URL; they combine: <code>#24h&who=jensen</code></td></tr>
-<tr><td nowrap>Update automatically every 2 hours</td><td>Schedule it with crontab, see "Deploying"</td></tr>
+<tr><td nowrap>Update automatically every 2 hours</td><td>Schedule it with crontab or GitHub Actions, see "Deploying"</td></tr>
 <tr><td nowrap>Use the data in my own frontend</td><td>Read <code>site/data/leaders.json</code>, format under "Page data format"</td></tr>
 </table>
 
@@ -314,16 +314,33 @@ The fetcher only reads public YouTube pages: no login, no cookies, no bot-check 
 
 ## Deploying
 
-The site is fully static: put the whole `site/` folder on any static host (Cloudflare Pages, GitHub Pages, Netlify, your own server).
+The site is fully static: put the whole `site/` folder on any static host (Cloudflare Workers / Pages, GitHub Pages, Netlify, your own server).
 
 1. **Use your own domain**: both pages (`site/index.html`, `site/en/index.html`) reference `ceotalks.online`. When deploying elsewhere, replace the domain in `canonical`, `hreflang`, `og:url`, `og:image` and the footer. The share images print the domain too: edit that line in `brand/og.html` and `brand/og-en.html`, then rerun `zsh brand/make_images.sh`.
-2. **Schedule the fetcher**: run it on a machine that can reach YouTube, then upload `site/data/leaders.json` to your host. For example, a crontab entry that runs every 2 hours:
+2. **Schedule the fetcher**: pick one of the two options below. The page shows the last update time and flags it once it's more than 8 hours old.
+
+**Option 1: your own machine (crontab)**. Run it on a machine that can reach YouTube, then upload `site/data/leaders.json` to your host. For example, a crontab entry that runs every 2 hours:
 
 ```
 25 */2 * * * cd /path/to/ceotalks && mkdir -p data && . ./config.env && python3 -I fetcher/leaders.py >> data/run.log 2>&1
 ```
 
-Only one round runs at a time (file lock); if the previous round hasn't finished, the new one is skipped. The page shows the last update time and flags it once it's more than 8 hours old.
+Only one round runs at a time (file lock); if the previous round hasn't finished, the new one is skipped.
+
+**Option 2: GitHub Actions + Cloudflare (what ceotalks.online uses)**. `.github/workflows/update-site.yml` runs a round every 2 hours: load the archive → fetch → AI judging → save the archive → upload `site/` to Cloudflare Workers (deploy settings are in `deploy/`). The archive lives on this repo's `data` branch as a single commit that each round overwrites. Set these under Settings → Secrets and variables → Actions:
+
+<table>
+<tr><th nowrap>Name</th><th nowrap>Where</th><th>What</th></tr>
+<tr><td nowrap><code>LEADERS_AI_URL</code></td><td nowrap>Variables</td><td>AI endpoint, any OpenAI-compatible API, ending in <code>/chat/completions</code></td></tr>
+<tr><td nowrap><code>LEADERS_AI_MODEL</code></td><td nowrap>Variables</td><td>Model name</td></tr>
+<tr><td nowrap><code>LEADERS_AI_KEY</code></td><td nowrap>Secrets</td><td>The key for that API</td></tr>
+<tr><td nowrap><code>CLOUDFLARE_API_TOKEN</code></td><td nowrap>Secrets</td><td>Cloudflare token: create it from the "Edit Cloudflare Workers" template; with your own domain, also add Zone → DNS → Edit; limit it to your own account and domain</td></tr>
+<tr><td nowrap><code>CLOUDFLARE_ACCOUNT_ID</code></td><td nowrap>Variables</td><td>Your Cloudflare account ID</td></tr>
+</table>
+
+If any of the three AI settings is missing, that round skips the AI (and follows the "AI off" rules); if either Cloudflare setting is missing, it doesn't upload. Keys and tokens go in Secrets and never into code or logs. To use it from a fork, change the repository name in the workflow's `jobs.update.if` and the name and domain in `deploy/wrangler.jsonc`. You can also run "更新网站" (Update site) by hand from the Actions page, with options to fetch only some people, search this year, turn the AI off, skip saving, or skip uploading.
+
+GitHub's machines hit YouTube's bot check on the very first video page (tested 2026-10), so this route sets `LEADERS_MAX_PAGES=0`: no video pages are opened, upload times are estimated from "x hours ago" on the search page and marked "about", and the AI only sees the short snippet from the search page. For exact times, use Option 1. Actions are free on public repos; private repos get 2,000 free minutes a month, and a round takes about 3 minutes, so every 2 hours fits but hourly would not.
 
 ## Page Data Format
 
@@ -381,6 +398,8 @@ ceotalks/
 │   ├── make_logo.py         Draws the logo
 │   ├── make_images.sh       Renders the share images and app icons
 │   └── og.html · og-en.html · touch.html   Layouts for the share images and app icon
+├── deploy/                  Cloudflare Workers deploy settings (wrangler.jsonc + worker.js that redirects www)
+├── .github/workflows/update-site.yml   GitHub Actions: fetch, save and upload every 2 hours
 ├── assets/screenshots/      Screenshots used in the README
 ├── dev/serve.mjs            Tiny local preview server
 ├── tests/test_offline.py    14 offline tests
@@ -408,7 +427,7 @@ With AI off, only recognized official channels and interview shows are shown, wh
 YouTube occasionally returns an abnormal page; the round records it as incomplete, the page shows it, and the next round searches again. On a 429 or a bot check the round makes no more YouTube requests; don't rerun right away. The 30-page cap and 2-second spacing per round are there to avoid getting blocked.
 
 **Q: Can it run on GitHub Actions or another cloud scheduler?**
-It runs, but data-center IPs are more likely to get YouTube bot checks. A home or office machine that can reach YouTube is the most reliable.
+Yes, the repo ships one (see Option 2 under "Deploying"). Search pages load fine, but video pages hit the bot check, so it doesn't open them and times are approximate. For exact times, run it on a home or office machine that can reach YouTube.
 
 **Q: It can't connect at all?**
 The machine needs to reach YouTube. The fetcher follows the system `HTTPS_PROXY` by default; set `LEADERS_NO_PROXY=1` to bypass the proxy.
