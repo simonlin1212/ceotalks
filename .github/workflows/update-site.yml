@@ -3,9 +3,11 @@
 # 只在 simonlin1212/ceotalks 上跑；fork 后要自己用，改掉下面 jobs.update.if 里的仓库名，再按 README「部署上线」设好。
 #
 # 要的设置（仓库 Settings → Secrets and variables → Actions）：
-#   secrets.CLOUDFLARE_API_TOKEN   Cloudflare 令牌：能部署 Workers；要 AI 的话还要能用 Workers AI
-#   vars.CLOUDFLARE_ACCOUNT_ID     Cloudflare 账号 ID
-#   vars.LEADERS_AI_MODEL          Workers AI 的模型名，如 @cf/openai/gpt-oss-120b；不设就不叫 AI
+#   vars.LEADERS_AI_URL            AI 接口地址（任何 OpenAI 兼容接口，写到 /chat/completions）
+#   vars.LEADERS_AI_MODEL          模型名
+#   secrets.LEADERS_AI_KEY         这个接口的 key；三样缺一样就不叫 AI
+#   secrets.CLOUDFLARE_API_TOKEN   Cloudflare 令牌，能部署 Workers（用「编辑 Cloudflare Workers」模板建）
+#   vars.CLOUDFLARE_ACCOUNT_ID     Cloudflare 账号 ID；这两样缺一样就不上传
 # 都没设也能跑：只抓、不叫 AI、不上传，用来看 YouTube 让不让 GitHub 的机器搜。
 name: 更新网站
 
@@ -70,16 +72,15 @@ jobs:
           ONLY: ${{ inputs.only }}
           BACKFILL: ${{ inputs.backfill }}
           AI_INPUT: ${{ inputs.ai }}
-          CF_ACCOUNT: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          LEADERS_AI_URL: ${{ vars.LEADERS_AI_URL }}
           LEADERS_AI_MODEL: ${{ vars.LEADERS_AI_MODEL }}
-          LEADERS_AI_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          LEADERS_AI_KEY: ${{ secrets.LEADERS_AI_KEY }}
           LEADERS_AI_TIMEOUT: "240"
-          LEADERS_AI_MAX_TOKENS: "4096"   # Workers AI 默认只给 256，写不完一批
+          LEADERS_AI_MAX_TOKENS: "4096"   # 有的接口默认给得很少（Workers AI 只给 256），写不完一批
           LEADERS_MAX_PAGES: "0"          # GitHub 的机器开视频页第一下就要人机验证（10-28 实测三次都是），不开
         run: |
-          if [ "$AI_INPUT" != off ] && [ -n "$LEADERS_AI_KEY" ] && [ -n "$LEADERS_AI_MODEL" ] && [ -n "$CF_ACCOUNT" ]; then
+          if [ "$AI_INPUT" != off ] && [ -n "$LEADERS_AI_URL" ] && [ -n "$LEADERS_AI_MODEL" ] && [ -n "$LEADERS_AI_KEY" ]; then
             export LEADERS_AI=openai
-            export LEADERS_AI_URL="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/ai/v1/chat/completions"
           else
             export LEADERS_AI=off
           fi
